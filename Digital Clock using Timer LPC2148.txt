@@ -1,0 +1,98 @@
+Digital Clock using Timer LPC2148
+==================================
+
+#include<lpc214x.h>
+#include<string.h>
+
+#define RS (1<<13)
+#define RW (1<<12)
+#define EN (1<<10)
+#define DATA 0x0FF<<15
+#define LCD_DIR DATA|RW|RS|EN
+
+void delay(unsigned int del)
+{
+	int i,j;
+	for(i=0;i<del;i++)
+	for(j=0;j<1000;j++);
+}
+void lcd_cmd(unsigned char c)
+{
+	IOPIN0=c<<15;
+	IOCLR0=RW;
+	IOCLR0=RS;
+	IOSET0=EN;
+	delay(1000);
+	IOCLR0=EN;
+}
+void lcd_data(unsigned char d)
+{
+	IOPIN0=d<<15;
+	IOCLR0=RW;
+	IOSET0=RS;
+	IOSET0=EN;
+	delay(1000);
+	IOCLR0=EN;
+}
+void lcd_init()
+{
+	lcd_cmd(0x38);
+	lcd_cmd(0x01);
+	lcd_cmd(0x0E);
+	lcd_cmd(0x80);
+}
+
+int main()
+{
+	int sec=0;
+	int min=0;
+	int hr=0;
+	char *str="  Digital Clock  ";
+	
+	IODIR0=LCD_DIR;
+	lcd_init();
+	
+	T0PR=14;
+	T0MR0=1000000;
+	T0MCR=0x03;
+	T0TCR=0x02;
+	T0TCR=0x01;
+	lcd_cmd(0x80);
+	while(*str!=NULL)
+	{
+		lcd_data(*str);
+		str++;
+	}
+	while(1)
+	{
+		if(T0IR&0x01)
+		{
+			sec++;
+			lcd_cmd(0x0CA);
+			lcd_data(0x30+sec/10);
+			lcd_data(0x30+sec%10);
+			T0IR=0x01;
+		}
+		if(sec>59)
+		{
+			sec=0;
+			min++;
+			lcd_cmd(0x0C6);
+			lcd_data(0x30+min/10);
+			lcd_data(0x30+min%10);
+			lcd_data(':');
+		}
+		if(min>59)
+		{
+			min=0;
+			hr++;
+			lcd_cmd(0x0C0);
+			lcd_data(0x30+hr/10);
+			lcd_data(0x30+hr%10);
+			lcd_data(':');
+		}
+		if(hr>11)
+			hr=0;
+	}
+}
+/***************************** The End **********************************/

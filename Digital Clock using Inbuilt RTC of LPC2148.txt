@@ -1,0 +1,73 @@
+Digital Clock using Inbuilt RTC of LPC2148
+============================================
+
+#include  <lpc214x.h>
+
+void init_rtc();
+void lcd_command(int);
+void lcd_init(void);
+void lcd_data(char);
+void delay(int );;
+
+void delay(int ct)
+{
+	int i , j;
+	for(i = 0; i < 5000; i++)
+	{
+		for(j = 0; j < ct; j++)
+		{
+		}
+	}
+}
+void lcd_init(void)
+{
+	IODIR0=1<<13|1<<12|1<<10|0xff<<15;;
+	lcd_command(0x80);
+	lcd_command(0x01);
+	lcd_command(0x0E);
+	lcd_command(0x38);	
+}
+void lcd_command(int n)
+{
+	IOPIN0=n<<15;
+	IOCLR0=1<<13;
+	IOCLR0=1<<12;
+	IOSET0=1<<10;
+	delay(100);
+	IOCLR0=1<<10;
+}
+void  lcd_data(char c)
+{
+	IOPIN0=c<<15;
+	IOSET0=1<<13;		 // RS=0--data mode
+	IOCLR0=1<<12;		 // RW=0 write mode
+	IOSET0=1<<10;		 // En enable latching
+	delay(100);
+	IOCLR0=1<<10;
+}
+void init_rtc()
+{
+	CCR = 0x11;
+	SEC = 0x00;
+	MIN = 0x00;
+	HOUR = 0x00;
+}
+int main()
+{
+	IODIR0 = 1 << 25;
+	lcd_init();
+	init_rtc();
+	while(1)
+	{	
+		lcd_command(0x80);
+		lcd_data(HOUR/10 + '0');
+		lcd_data(HOUR%10 + '0');
+		lcd_data(':');
+		lcd_data(MIN/10 + '0');
+		lcd_data(MIN%10 + '0');
+		lcd_data(':');
+		lcd_data(SEC/10 + '0');
+		lcd_data(SEC%10 + '0');
+	}		
+}
+/************************************************************************/
